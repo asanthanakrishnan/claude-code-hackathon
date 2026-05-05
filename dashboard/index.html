@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Churn Dashboard — One Number</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+           background: #f5f5f5; color: #1a1a1a; }
+    header { background: #1a1a2e; color: #fff; padding: 20px 32px;
+             display: flex; align-items: center; justify-content: space-between; }
+    header h1 { font-size: 1.25rem; font-weight: 600; }
+    #version-badge { background: #e63946; color: #fff; padding: 4px 10px;
+                     border-radius: 4px; font-size: 0.8rem; font-weight: 700;
+                     letter-spacing: 0.05em; }
+    main { max-width: 1100px; margin: 0 auto; padding: 32px 24px; }
+
+    /* KPI row */
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 32px; }
+    .kpi-card { background: #fff; border-radius: 8px; padding: 20px 24px;
+                box-shadow: 0 1px 4px rgba(0,0,0,0.08); position: relative; }
+    .kpi-card .label { font-size: 0.75rem; color: #666; text-transform: uppercase;
+                       letter-spacing: 0.06em; margin-bottom: 8px; }
+    .kpi-card .value { font-size: 2rem; font-weight: 700; color: #1a1a2e; }
+    .kpi-card .sub { font-size: 0.75rem; color: #888; margin-top: 4px; }
+    .kpi-card.active-version { border-top: 3px solid #e63946; }
+    .kpi-card .ver-tag { position: absolute; top: 12px; right: 12px;
+                         font-size: 0.7rem; background: #f0f0f0; padding: 2px 6px; border-radius: 3px; }
+
+    /* Controls */
+    .controls { display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; align-items: flex-end; }
+    .controls label { font-size: 0.8rem; font-weight: 600; display: block; margin-bottom: 4px; }
+    .controls select, .controls input[type=date] {
+      padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px;
+      font-size: 0.9rem; background: #fff; }
+    .controls button { padding: 9px 20px; background: #1a1a2e; color: #fff;
+                        border: none; border-radius: 6px; cursor: pointer; font-size: 0.9rem; }
+    .controls button:hover { background: #2a2a4e; }
+
+    /* Chart section */
+    .section { background: #fff; border-radius: 8px; padding: 24px;
+               box-shadow: 0 1px 4px rgba(0,0,0,0.08); margin-bottom: 24px; }
+    .section h2 { font-size: 1rem; font-weight: 600; margin-bottom: 16px; color: #333; }
+
+    /* Drill-down table */
+    table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    th { text-align: left; padding: 8px 12px; background: #f7f7f7;
+         border-bottom: 2px solid #e0e0e0; font-weight: 600; color: #555; }
+    td { padding: 8px 12px; border-bottom: 1px solid #f0f0f0; }
+    tr:hover td { background: #fafafa; }
+    .tag { display: inline-block; padding: 2px 8px; border-radius: 12px;
+           font-size: 0.75rem; font-weight: 600; }
+    .tag.churned { background: #fee2e2; color: #b91c1c; }
+    .tag.active { background: #dcfce7; color: #15803d; }
+    .tag.downgraded { background: #fef9c3; color: #a16207; }
+    .tag.expanded { background: #dbeafe; color: #1d4ed8; }
+
+    #status-bar { font-size: 0.8rem; color: #999; margin-top: 12px; text-align: right; }
+    .error { color: #dc2626; background: #fee2e2; padding: 12px; border-radius: 6px; margin-bottom: 16px; }
+  </style>
+</head>
+<body>
+<header>
+  <h1>Monthly Churn — One Number</h1>
+  <span id="version-badge">v1 · Logo Churn</span>
+</header>
+
+<main>
+  <div id="error-msg" class="error" style="display:none"></div>
+
+  <!-- KPI cards: one per definition -->
+  <div class="kpi-row" id="kpi-row">
+    <div class="kpi-card" id="kpi-v1">
+      <div class="label">Logo Churn</div>
+      <div class="value" id="val-v1">—</div>
+      <div class="sub" id="sub-v1">loading…</div>
+      <span class="ver-tag">v1</span>
+    </div>
+    <div class="kpi-card" id="kpi-v2">
+      <div class="label">Gross Rev Churn (no downgrades)</div>
+      <div class="value" id="val-v2">—</div>
+      <div class="sub" id="sub-v2">loading…</div>
+      <span class="ver-tag">v2</span>
+    </div>
+    <div class="kpi-card" id="kpi-v3">
+      <div class="label">Gross Rev Churn (+ downgrades)</div>
+      <div class="value" id="val-v3">—</div>
+      <div class="sub" id="sub-v3">loading…</div>
+      <span class="ver-tag">v3</span>
+    </div>
+    <div class="kpi-card" id="kpi-v4">
+      <div class="label">Net Revenue Churn</div>
+      <div class="value" id="val-v4">—</div>
+      <div class="sub" id="sub-v4">loading…</div>
+      <span class="ver-tag">v4</span>
+    </div>
+  </div>
+
+  <!-- Controls -->
+  <div class="controls">
+    <div>
+      <label>Period Start</label>
+      <input type="date" id="period-start" value="2024-06-01" />
+    </div>
+    <div>
+      <label>Period End</label>
+      <input type="date" id="period-end" value="2024-06-30" />
+    </div>
+    <div>
+      <label>Active Definition</label>
+      <select id="active-version">
+        <option value="v1">v1 — Logo Churn</option>
+        <option value="v2">v2 — Gross Rev (no downgrades)</option>
+        <option value="v3">v3 — Gross Rev (+ downgrades ≥20%)</option>
+        <option value="v4">v4 — Net Revenue Churn</option>
+      </select>
+    </div>
+    <button onclick="refresh()">Recalculate</button>
+  </div>
+
+  <!-- Trend chart -->
+  <div class="section">
+    <h2>Monthly Trend — All Definitions</h2>
+    <canvas id="trend-chart" height="80"></canvas>
+  </div>
+
+  <!-- Drill-down table -->
+  <div class="section">
+    <h2>Drill-Down — Churned Customers This Period</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Customer ID</th>
+          <th>Plan</th>
+          <th>Region</th>
+          <th>MRR</th>
+          <th>Sub End</th>
+          <th>Status</th>
+          <th>Churned At</th>
+        </tr>
+      </thead>
+      <tbody id="drill-tbody">
+        <tr><td colspan="7" style="color:#999">Loading…</td></tr>
+      </tbody>
+    </table>
+    <div id="status-bar">—</div>
+  </div>
+</main>
+
+<script>
+const API = 'http://localhost:8002';
+
+function pct(v) {
+  if (v === null || v === undefined) return 'N/A';
+  return (v * 100).toFixed(2) + '%';
+}
+
+async function fetchAll(start, end) {
+  const r = await fetch(`${API}/compare?period_start=${start}&period_end=${end}`);
+  if (!r.ok) throw new Error(`API error: ${r.status}`);
+  return r.json();
+}
+
+function highlightActive(version) {
+  ['v1','v2','v3','v4'].forEach(v => {
+    document.getElementById(`kpi-${v}`).classList.toggle('active-version', v === version);
+  });
+  const labels = { v1: 'v1 · Logo Churn', v2: 'v2 · Gross Rev', v3: 'v3 · Gross + Downgrades', v4: 'v4 · Net Rev' };
+  document.getElementById('version-badge').textContent = labels[version] || version;
+}
+
+async function refresh() {
+  const start = document.getElementById('period-start').value;
+  const end = document.getElementById('period-end').value;
+  const activeVer = document.getElementById('active-version').value;
+  document.getElementById('error-msg').style.display = 'none';
+
+  try {
+    const data = await fetchAll(start, end);
+    const res = data.results;
+
+    ['v1','v2','v3','v4'].forEach(v => {
+      const r = res[v];
+      document.getElementById(`val-${v}`).textContent = r.value != null ? pct(r.value) : 'N/A';
+      document.getElementById(`sub-${v}`).textContent =
+        r.value != null ? `${r.numerator} / ${r.denominator}` : r.error || '—';
+    });
+
+    highlightActive(activeVer);
+    await loadDrillDown(start, end);
+    await loadTrend(activeVer);
+  } catch(e) {
+    showError(e.message);
+  }
+}
+
+function showError(msg) {
+  const el = document.getElementById('error-msg');
+  el.textContent = `Error: ${msg}. Is the engine running? (uvicorn engine.app:app --port 8002)`;
+  el.style.display = 'block';
+}
+
+async function loadDrillDown(start, end) {
+  try {
+    const r = await fetch(`${API}/drill?period_start=${start}&period_end=${end}`).catch(() => null);
+    if (!r || !r.ok) {
+      // Fallback: show placeholder
+      document.getElementById('drill-tbody').innerHTML =
+        '<tr><td colspan="7" style="color:#999">Drill-down endpoint not available (add /drill to engine)</td></tr>';
+      return;
+    }
+    const rows = await r.json();
+    renderDrillTable(rows);
+  } catch(e) {
+    document.getElementById('drill-tbody').innerHTML = `<tr><td colspan="7" style="color:#dc2626">${e.message}</td></tr>`;
+  }
+}
+
+function renderDrillTable(rows) {
+  const tbody = document.getElementById('drill-tbody');
+  if (!rows.length) {
+    tbody.innerHTML = '<tr><td colspan="7" style="color:#999">No churned customers this period.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = rows.map(r => `
+    <tr>
+      <td>${r.customer_id}</td>
+      <td>${r.plan}</td>
+      <td>${r.region}</td>
+      <td>$${r.mrr}</td>
+      <td>${r.subscription_end}</td>
+      <td><span class="tag ${r.status}">${r.status}</span></td>
+      <td>${r.churned_at || '—'}</td>
+    </tr>
+  `).join('');
+  document.getElementById('status-bar').textContent =
+    `${rows.length} rows · PII redacted via PostToolUse hook`;
+}
+
+let trendChart = null;
+
+async function loadTrend(version) {
+  const months = [];
+  const values = [];
+  // Last 6 calendar months ending in the selected period
+  const end = new Date(document.getElementById('period-end').value);
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(end.getFullYear(), end.getMonth() - i, 1);
+    const ms = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-01`;
+    const me = new Date(d.getFullYear(), d.getMonth()+1, 0);
+    const meStr = `${me.getFullYear()}-${String(me.getMonth()+1).padStart(2,'0')}-${String(me.getDate()).padStart(2,'0')}`;
+    months.push(ms.slice(0,7));
+    try {
+      const r = await fetch(`${API}/calculate`, {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({version, period_start: ms, period_end: meStr}),
+      });
+      const data = await r.json();
+      values.push(data.value != null ? +(data.value * 100).toFixed(3) : null);
+    } catch { values.push(null); }
+  }
+
+  const ctx = document.getElementById('trend-chart').getContext('2d');
+  if (trendChart) trendChart.destroy();
+  trendChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: months,
+      datasets: [{
+        label: `${version} Churn %`,
+        data: values,
+        borderColor: '#e63946',
+        backgroundColor: 'rgba(230,57,70,0.08)',
+        tension: 0.3,
+        fill: true,
+        pointRadius: 4,
+      }],
+    },
+    options: {
+      scales: { y: { ticks: { callback: v => v + '%' } } },
+      plugins: { legend: { position: 'bottom' } },
+    },
+  });
+}
+
+// Boot
+document.getElementById('active-version').addEventListener('change', () => {
+  highlightActive(document.getElementById('active-version').value);
+  loadTrend(document.getElementById('active-version').value);
+});
+refresh();
+</script>
+</body>
+</html>
