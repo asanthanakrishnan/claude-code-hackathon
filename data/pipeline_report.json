@@ -1,0 +1,11 @@
+{
+  "total_input": 425,
+  "duplicates_removed": 225,
+  "rows_with_flags": 29,
+  "flag_counts": {
+    "missing_mrr": 6,
+    "missing_status": 15,
+    "missing_subscription_end": 8
+  },
+  "total_canonical": 200
+}
