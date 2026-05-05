@@ -1,173 +1,117 @@
-# Claude Code Hackathon
-
-## The Point
-
-This is a hack. You get a team, a scenario, and Claude Code. The scenarios are enterprise-flavored briefs: a monolith nobody understands, a migration nobody agrees on, seven systems that can't agree on what a customer is. Real problems, compressed.
-
-There's no prescribed path. Each scenario sketches a handful of challenges worth working toward. How you get there, what stack you pick, what you skip, what you invent on top is up to you. We care about ambition and judgment, not box-checking.
-
----
-
-## The Setup
-
-Pick one scenario. Work with your team. Get as far as you can.
-
-Each scenario sketches a handful of challenges. You probably won't do them all, and that's the point. **Depth beats breadth.** Pick the ones that interest you, work in parallel where you can, and let Claude help you coordinate.
-
----
-
-## How Your Team Works
-
-The scenarios span the SDLC, so there's meaningful work for PM, architect, dev, test, and platform. You won't have one of each, and that's fine. **Play every role, regardless of your day job.** Claude Code doesn't care what your title is, and a lot of what makes the hack interesting is watching the tool perform in parts of the work you don't normally touch.
-
-Divide the challenges up early. Share a running `CLAUDE.md` so everyone teaches the tool the same conventions. Commit often. The commit history is part of the submission and part of how the judges read the journey.
-
----
-
-## The Rules
-
-1. **Tech stack is yours to choose.** One exception: Scenario 5 requires the **Claude Agent SDK**. Use Claude to help you learn it, or to migrate if you're coming from another framework.
-2. **You may need to build starter code, data, or documents.** If the scenario says "a 12-year-old monolith exists," you generate it. That's part of the job. Some scenarios offer optional starter repos. Use them or don't.
-3. **Play every role.** Your team needs a PM, architect, developer, tester, data engineer, and infra engineer whether you staffed for it or not.
-4. **Commit history is evidence.** We want to see the journey, not just the destination.
-5. **`CLAUDE.md` is your friend.** Teach it your conventions early.
-6. **Document your work.** Your repo must include a `README.md` (template below) explaining what you built and what you'd do next.
-7. **Build a presentation.** Use Claude Code to generate an HTML presentation you *could* deliver if you win the judging. It lives in your repo whether you present or not.
-8. **Claude will judge.** At the end, Claude evaluates submissions. A handful of teams present live.
-
----
-
-## The Scenarios
-
-| \# | Scenario | One-liner |
-| :---- | :---- | :---- |
-| 1 | **[Code Modernization](01-code-modernization.md)** | A monolith nobody understands. The board wants it "modernized." |
-| 2 | **[Cloud Migration](02-cloud-migration.md)** | On-prem to cloud. The CFO and CTO disagree on how. |
-| 3 | **[Data Engineering](03-data-engineering.md)** | Seven systems. Zero agreement on what a "customer" is. |
-| 4 | **[Data Analytics](04-data-analytics.md)** | 40 dashboards. One metric. Four different answers. |
-| 5 | **[Agentic Solution](05-agentic-solution.md)** (Claude Agent SDK) | 200 requests a day, triaged by hand. Build the agent. |
-
----
-
-## Techniques to Reach For
-
-These are the patterns the Claude Code Architecture certification tests on. No scenario requires them, and no challenge dictates which to use. They're here because a lot of teams also want the hack to double as cert practice. Pick two or three you want to get reps on, and reach for them inside whichever challenges you pursue.
-
-**Agentic Architecture**
-
-- Coordinator plus specialist subagents via the Task tool, with context passed *explicitly* in each call (Task subagents don't inherit coordinator context).
-- Stop conditions that are real signals, not "parse the text" or "iteration cap."
-- `fork_session` to try two paths on the same input and compare.
-
-**Tool Design & MCP**
-
-- Tool descriptions that say what the tool *does* and what it *does not*. Input formats, edge cases, example queries.
-- Structured error responses (`isError: true` with a reason code and guidance) so the agent can recover gracefully.
-- Keep each specialist's tool count small. Reliability tends to drop once an agent has more than a handful.
-- An MCP server over whatever system you built, so a fresh Claude session picks the right tool on the first try.
-
-**Claude Code Config**
-
-- Three-level `CLAUDE.md`: user (personal preferences), project (shared, in VCS), directory (per-module specifics).
-- Custom slash commands *and* skills, used distinctly. A command runs a playbook; a skill captures reusable guidance.
-- Plan Mode for anything reversible-dangerous; direct execution for the safe paths. Defend the default.
-- Non-interactive Claude Code in CI, with scoped tools and no write access to production paths.
-
-**Prompt Engineering**
-
-- Explicit criteria in place of vague modifiers. "Material," "significant," and "recent" are usually a signal that the definition needs sharper thresholds.
-- Few-shot examples with a negative case and a boundary case. Two sharp examples outperform eight fuzzy ones.
-- `tool_use` with a JSON Schema for anything that must parse. Don't prompt-for-JSON.
-- Validation-retry loop: structured validator checks the output, errors are fed back, Claude retries up to N times. Log retry count and error type.
-
-**Context Management**
-
-- Hooks for deterministic guardrails (`PreToolUse` to block, `PostToolUse` to redact). Prompts for probabilistic preferences. An ADR on why each is which is worth writing; the distinction shows up repeatedly on the exam.
-- Escalation rules that are category plus confidence plus impact, not "when the agent isn't sure."
-- Stratified sampling and field-level confidence when humans review.
-
----
-
-## The Judging
-
-Claude does the first pass. Top teams present live.
-
-**What definitely gets read:**
-
-1. Your `README.md`
-2. Your `presentation.html`
-3. Your `CLAUDE.md`
-
-These are your pitch. Don't leave them to the end. If Claude only sees those three files, it should still understand what you built, why it matters, how far you got, and how you taught the tool to work your way. We may go deeper into the repo, we may not. Assume those three carry the weight.
-
-**What we're looking for** (final categories will be a surprise!, but think along these lines):
-
-- **Most production-ready.** Could hand it to an ops team Monday.
-- **Best architecture thinking.** ADRs, diagrams, decisions someone will thank you for later.
-- **Best testing.** Not coverage. Adversarial thinking, edge cases, evals.
-- **Best product work.** Stories that are actually stories. Docs that persuade.
-- **Most inventive Claude Code use.** Subagents, hooks, skills, something we didn't expect.
-- **Wildcards:** best CI/CD, best legacy archaeology, best "what if this goes wrong" thinking, furthest through the challenges with quality intact, team that questioned a scenario requirement and was *right*.
-
----
-
-## Submission
-
-You need three files:
-
-1. **`README.md`** tells the story. Use the template below.
-2. **`CLAUDE.md`** so we can see how you taught Claude Code to work your way.
-3. **`presentation.html`**, your HTML deck built with Claude Code, ready to present if called.
-
-**Preferred:** put the three files in a folder named for your table and team (for example `Table1_SonnetSlayers/`) and upload the folder to the link provided at your session.
-
-**Alternative:** if a folder upload isn't supported, zip the three files into an archive with the same naming convention (for example `Table1_SonnetSlayers.zip`) and upload that instead.
-
-Either way, **one submission per team**.
-
-**NO CLIENT OR INTERNAL DATA.** Anything in the submission must be safe to share.
-
----
-
-## README Template
-
-Copy this into your repo's `README.md` and fill it in as you go, not at the end.
-
-```
-# Team <name>
+# Team Deloitte
 
 ## Participants
-- Name (role(s) played today)
-- Name (role(s) played today)
-- Name (role(s) played today)
+- Arun Santhanakrishnan (PM · Architect · Developer · Tester)
 
 ## Scenario
-Scenario <#>: <title>
+Scenario 4: Data & Analytics — "40 Dashboards, One Metric, Four Answers"
 
 ## What We Built
-A couple of paragraphs. What exists in this repo that didn't exist when you
-started. What runs, what's scaffolding, what's faked.
+
+A complete system that takes one contested metric (SaaS Monthly Churn Rate), imposes a single authoritative definition, and makes it versioned, executable, and queryable in plain English.
+
+**What runs:**
+- `data/pipeline.py` — ingests four noisy source files (timezone offset, duplicates, mislabeled categories, gaps/nulls) and produces a clean canonical CSV. 425 raw rows → 200 canonical, 29 flagged.
+- `engine/app.py` — FastAPI REST API with four versioned metric definitions (v1 logo churn, v2 gross revenue, v3 gross+downgrades, v4 net revenue). Every result is tagged with the definition version and timestamp that produced it.
+- `engine/tests/` — 34 unit tests covering normal cases, boundary conditions (grace period day 30 vs 31, exactly 20% downgrade threshold), and exclusions. All passing.
+- `semantic/server.py` — MCP server with four tools (`get_metric`, `list_definitions`, `explain_calculation`, `compare_periods`). A fresh Claude session picks the right tool on the first try.
+- `dashboard/index.html` — single HTML dashboard replacing the 40 legacy views: top-level KPI for all four versions, 6-month trend chart, and operator drill-down.
+- `evals/run_evals.py` — CI eval harness against 20 golden questions. 100% answer accuracy, 100% refusal accuracy, 0% false-confidence rate.
+- `panel/coordinator.py` — agentic variance panel that spins up three parallel subagents (geography, product, time) with explicit context passing when the metric moves unexpectedly.
+- `.claude/hooks/redact_pii.py` — PostToolUse hook that deterministically redacts `customer_name` and `customer_email` from drill-down results.
+
+**What's scaffolded / faked:**
+- Data is generated (not from a live SaaS system).
+- Dashboard drill-down table is mocked — the `/drill` engine endpoint is not yet implemented.
+- Panel subagents synthesize from pre-computed segment data; statistical significance testing is not included.
 
 ## Challenges Attempted
+
 | # | Challenge | Status | Notes |
 |---|---|---|---|
-| 1 | The <name> | done / partial / skipped | |
-| 2 | | | |
+| 1 | The Room — stakeholder interviews | done | Four competing definitions captured; disagreements documented in `decisions/metric-definition.md` |
+| 2 | The Mess — noisy raw data | done | Four sources with distinct quality problems; pipeline normalizes to canonical |
+| 3 | The Definition — authoritative metric | done | `decisions/metric-definition.md` with explicit thresholds and boundary examples |
+| 4 | The Engine — calculation as code | done | FastAPI, four versioned definitions, result tags, 34 tests |
+| 5 | The One — single dashboard | done | HTML/Chart.js, KPI + trend + drill-down |
+| 6 | The Reconciliation — edge case table | done | 14 edge cases × 5 definitions in `evals/reconciliation.md` |
+| 7 | The Scorecard — eval harness | done | 20 golden questions, stratified, runs in CI |
+| 8 | The Question — NL query layer | partial | MCP server built; Claude session wiring not yet end-to-end |
+| 9 | The Panel — agentic variance explanation | done | Coordinator + 3 parallel subagents with explicit context passing |
 
 ## Key Decisions
-Biggest calls you made and why. Link into `/decisions` for the full ADRs.
+
+**Authoritative definition is v1 (logo churn), not revenue churn.**
+Ops and CS use customer count to drive capacity planning. Revenue churn (v2–v4) is tracked for finance. Conflating them inflates the ops metric with dollar weights that don't map to headcount. Full rationale in `decisions/metric-definition.md`.
+
+**30-day grace period in v1/v2, none in v3/v4.**
+Matches the billing provider's retry window. A card failure on day 1 that clears on day 20 is not a churn. v3/v4 intentionally use a calendar-month hard cut — this is the single biggest source of disagreement between teams and is documented explicitly. See `decisions/metric-definition.md` → Boundary Examples.
+
+**PII redaction in a PostToolUse hook, not a prompt instruction.**
+Hooks are deterministic — they run unconditionally on every result. Prompt instructions are probabilistic and can be overridden or forgotten when context is long. PII redaction is a compliance requirement, not a preference. See `decisions/architecture.md` → Key Design Decisions.
+
+**MCP server capped at 4 tools.**
+Reliability drops past ~5 tools per agent. Each tool description includes an explicit "does not" clause so a fresh Claude session disambiguates without needing to try multiple tools first.
+
+**Reconciliation table prioritized over dashboard polish.**
+The table (rows = edge cases, columns = five definitions) is the artifact that wins the stakeholder room. It shifts the conversation from "who's right" to "which assumptions do we standardize on." Dashboard drill-down is mocked; reconciliation table is complete.
 
 ## How to Run It
-Exact commands. Assume the reader has Docker and nothing else.
 
-## If We Had More Time
-What you'd tackle next, in priority order. Be honest about what's held
-together with tape.
+```bash
+# 1. Install dependencies
+pip install fastapi uvicorn pydantic mcp anthropic pytest
 
-## How We Used Claude Code
-What worked. What surprised you. Where it saved the most time.
+# 2. Generate data and run pipeline
+python3 data/generate_sources.py
+python3 data/pipeline.py
+# → data/canonical.csv (200 rows, 29 flagged)
+
+# 3. Run all tests
+python3 -m pytest engine/tests/ -v
+# → 34 passed
+
+# 4. Run eval harness
+python3 evals/run_evals.py --verbose
+# → 20/20, CI THRESHOLD PASSED
+
+# 5. Start the engine API
+uvicorn engine.app:app --reload --port 8002
+
+# 6. Try the comparison endpoint (shows all four versions disagreeing)
+curl "http://localhost:8002/compare?period_start=2024-06-01&period_end=2024-06-30"
+
+# 7. Open the dashboard
+open dashboard/index.html
+
+# 8. Start the MCP server (for Claude NL queries)
+python3 semantic/server.py
+
+# 9. Run the agentic variance panel (requires ANTHROPIC_API_KEY)
+export ANTHROPIC_API_KEY=sk-ant-...
+python3 panel/coordinator.py --version v1 --period-a 2024-05-01 2024-05-31 --period-b 2024-06-01 2024-06-30
 ```
 
----
+## If We Had More Time
 
-**Pick a scenario. Start building.**
+1. **Wire the NL query layer end-to-end.** Configure a Claude session with the MCP server and test "Why was June worse than May?" against the live engine. The semantic layer is built; the session wiring is not.
+2. **Implement `/drill` on the engine API.** The dashboard drill-down is mocked. The engine needs a `GET /drill?period_start=&period_end=&version=` endpoint that returns filtered canonical rows (with PII already redacted by the hook).
+3. **Statistical significance on the variance panel.** The panel currently compares raw rates across segments. A proper implementation would flag whether a segment delta is statistically significant before calling it the "best explanation."
+4. **Definition promotion workflow.** When v1 is updated to v2, surface a diff showing which historical results would change. The reconciliation table is the manual prototype for this — it should become a programmatic check in CI.
+5. **Real data connectors.** Replace `generate_sources.py` with adapters for actual billing systems (Stripe, Chargebee) so the pipeline runs on live data.
+
+## How We Used Claude Code
+
+**Biggest time saves:**
+- The entire system scaffold (7 layers, 34 files, 4,400 lines) was built in a single session using parallel tool calls across independent modules. What would have taken a day of boilerplate took under an hour.
+- Boundary-case test generation: describing the grace period edge cases in plain English and having Claude translate them into deterministic test fixtures (`engine/tests/fixtures.py`) eliminated the usual cycle of "write test → find it's wrong → fix fixture" iteration.
+- The reconciliation table: stating "rows are edge cases, columns are the five definitions, cells show what each returns" produced a complete, accurate artifact on the first pass.
+
+**What surprised us:**
+- Three-level CLAUDE.md genuinely works. The directory-level files (`engine/CLAUDE.md`, `semantic/CLAUDE.md`) kept Claude from bleeding engine conventions into the MCP layer and vice versa.
+- The hooks-vs-prompts distinction is not just an exam topic — it surfaced a real decision. The PII redaction hook caught a case where a prompt instruction would have been silently ignored in a long-context session.
+- Asking Claude to write tool descriptions that include "does not" boundaries produced noticeably better tool selection than descriptions that only stated what the tool does.
+
+**Where it saved the most time:**
+- Data quality simulation (`generate_sources.py`) — generating realistic noise patterns (retry storm duplicates, tz-naive timestamps, label swaps) that are hard to think up from scratch.
+- The eval harness — translating "include refusal cases and adversarial prompts" into a concrete 20-question golden set with expected tool names, expected output keywords, and CI thresholds.
